@@ -21,14 +21,15 @@ internal class DdTraceImpementation: DdTrace {
     }
 
     func startSpan(operation: NSString, context: NSDictionary, timestampMs: Int64) -> NSString {
-        let id = UUID().uuidString as NSString
+        let id: NSString = retrieveId(context: context)
+        let childOf: OTSpanContext? = associateChildren(context: context)
         let timeIntervalSince1970: TimeInterval = Double(timestampMs) / 1_000
         let startDate = Date(timeIntervalSince1970: timeIntervalSince1970)
-
+    
         objc_sync_enter(self)
         spanDictionary[id] = tracer.startSpan(
             operationName: operation as String,
-            childOf: nil,
+            childOf: childOf,
             tags: castAttributesToSwift(context).mergeWithGlobalAttributes(),
             startTime: startDate
         )
@@ -53,5 +54,22 @@ internal class DdTraceImpementation: DdTrace {
         for (key, value) in tags {
             span.setTag(key: key, value: value)
         }
+    }
+    
+    private func retrieveId(context: NSDictionary) -> NSString {
+        if let passedId = context["view.id"] as? NSString {
+            return passedId
+        } else {
+            return UUID().uuidString as NSString
+        }
+    }
+    
+    private func associateChildren(context: NSDictionary) -> OTSpanContext? {
+        if let childKey = context["childOf"] as? NSString {
+            if let child = spanDictionary[childKey]?.context {
+                return OTReference.child(of: child).context
+            }
+        }
+        return nil
     }
 }
