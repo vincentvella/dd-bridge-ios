@@ -59,9 +59,8 @@ internal class DdTraceImpementation: DdTrace {
     private func retrieveId(context: NSDictionary) -> NSString {
         if let passedId = context["view.id"] as? NSString {
             return passedId
-        } else {
-            return UUID().uuidString as NSString
         }
+        return UUID().uuidString as NSString
     }
     
     private func associateChildren(context: NSDictionary) -> OTSpanContext? {
