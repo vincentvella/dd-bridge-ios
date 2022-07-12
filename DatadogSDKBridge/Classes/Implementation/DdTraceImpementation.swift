@@ -64,9 +64,9 @@ internal class DdTraceImpementation: DdTrace {
     }
     
     private func associateChildren(context: NSDictionary) -> OTSpanContext? {
-        if let childKey = context["childOf"] as? NSString {
-            if let child = spanDictionary[childKey]?.context {
-                return OTReference.child(of: child).context
+        if let parentKey = context["childOf"] as? NSString {
+            if let parent = spanDictionary[parentKey]?.context {
+                return parent
             }
         }
         return nil
