@@ -39,10 +39,8 @@ internal class DdTraceImpementation: DdTrace {
     }
 
     func finishSpan(spanId: NSString, context: NSDictionary, timestampMs: Int64) {
-        objc_sync_enter(self)
-        let optionalSpan = spanDictionary.removeValue(forKey: spanId)
-        objc_sync_exit(self)
-
+        let optionalSpan = spanDictionary[spanId]
+        queueForDeletion(spanId: spanId)
         if let span = optionalSpan {
             set(tags: castAttributesToSwift(context).mergeWithGlobalAttributes(), to: span)
             let timeIntervalSince1970: TimeInterval = Double(timestampMs) / 1_000
@@ -70,5 +68,15 @@ internal class DdTraceImpementation: DdTrace {
             }
         }
         return nil
+    }
+    
+    private func queueForDeletion(spanId: NSString) {
+        // Queues the deletion of the keys, allows for associating datadog events with a view's context
+        // After the page has completed mounting components will continue to load after page has completed mounting
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+            objc_sync_enter(self)
+            self.spanDictionary.removeValue(forKey: spanId)
+            objc_sync_exit(self)
+        }
     }
 }
